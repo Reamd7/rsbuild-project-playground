@@ -4,11 +4,7 @@ import { useSignalEffect, useSignals } from '@preact/signals-react/runtime';
 import { useSignal, useComputed, Signal } from '@preact/signals-react';
 import { useSignalRef } from '@preact/signals-react/utils';
 
-const MoveItem = ({
-  x
-}: {
-  x: Signal<number>
-}) => {
+const MoveItem = ({ x }: { x: Signal<number> }) => {
   // 去掉注释的情况下，性能会大幅提升，因为不再需要用 react 重新渲染了
   useSignals();
   const computedStyle = useComputed<React.CSSProperties>(() => ({
@@ -30,14 +26,12 @@ const MoveItem = ({
   //   }
   // });
 
-  return <div style={computedStyle.value} ref={elementRef} />
-}
+  return useComputed(() => {
+    return <div style={computedStyle.value} ref={elementRef} />;
+  });
+};
 
-const Track = ({
-  x
-}: {
-  x: Signal<number>
-}) => {
+const Track = ({ x }: { x: Signal<number> }) => {
   useSignals();
   // div 起始位置
   const startX = useSignal(0);
@@ -53,12 +47,14 @@ const Track = ({
   const onMouseMove = useComputed(() => {
     return (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
       if (!dragging.value) return;
-      // 所以拿不到更新后的 startX 和 moveStartX
-      console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
-      // 移动距离
-      const distance = ev.clientX - mouseStartX.peek();
-      // 设置最终位置
-      x.value = startX.peek() + distance;
+      requestAnimationFrame(() => {
+        // 移动距离
+        console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
+        // 设置最终位置
+        const distance = ev.clientX - mouseStartX.peek();
+        // 所以拿不到更新后的 startX 和 moveStartX
+        x.value = startX.peek() + distance;
+      })
     };
   });
   const onMouseUpOrBlue = useComputed(() => {
@@ -86,26 +82,22 @@ const Track = ({
       >
         拖动这个 div 改变上面 div 的位置 {x}
       </div>
-    )
-  })
+    );
+  });
 
-  return track.value
-}
+  return track;
+};
 
 const App = () => {
   useSignals();
   // 当前位置
   const x = useSignal(0);
 
-  const result = useComputed(() => {
-    return (
-      <>
-        <MoveItem x={x} />
-        <Track x={x} />
-      </>
-    )
-  });
-
-  return result.value;
+  return (
+    <>
+      <MoveItem x={x} />
+      <Track x={x} />
+    </>
+  );
 };
 export default App;
