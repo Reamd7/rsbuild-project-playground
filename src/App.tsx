@@ -39,9 +39,10 @@ const Track = ({ x }: { x: Signal<number> }) => {
   const dragging = useSignal(false);
   const onMouseDown = useComputed(() => {
     return (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      startX.value = x.peek();
       mouseStartX.value = ev.clientX;
       dragging.value = true;
+      x.value = ev.clientX;
+      startX.value = x.peek();
     };
   });
   const onMouseMove = useComputed(() => {
