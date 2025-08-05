@@ -4,6 +4,7 @@ import { useSignalEffect, useSignals } from '@preact/signals-react/runtime';
 import { useSignal, useComputed, Signal, signal } from '@preact/signals-react';
 import { For, useSignalRef } from '@preact/signals-react/utils';
 import { useRef } from 'react';
+import { count } from './count';
 
 interface MoveItemProps { 
   x: Signal<number>,
@@ -16,8 +17,8 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   const computedStyle = useComputed<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 200 + 10 * index,
-    // left: x.peek() - 50,
-    transform: `translateX(${x.value - 50}px)`,
+    transform: `translateX(${x.peek() - 50}px)`,
+    // transform: `translateX(${x.value - 50}px)`,
     zIndex: 9999,
     width: (1000 + index) % 10,
     height: 10,
@@ -26,11 +27,11 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
 
   const elementRef = useSignalRef<HTMLDivElement | null>(null);
 
-  // useSignalEffect(() => {
-  //   if (elementRef.value) {
-  //     elementRef.value.style.left = `${x.value - 50}px`;
-  //   }
-  // });
+  useSignalEffect(() => {
+    if (elementRef.value) {
+      elementRef.value.style.transform = `translateX(${x.value - 50}px)`;
+    }
+  });
 
   return useComputed(() => {
     return <div style={computedStyle.value} ref={elementRef} />;
@@ -99,7 +100,7 @@ const Track = ({ x }: TrackProps) => {
   return track;
 };
 
-const list = signal(Array.from({ length: 300 }).fill(0).map((item, index) => index));
+const list = signal(Array.from({ length: count }).fill(0).map((item, index) => index));
 const App = () => {
   useSignals();
   // 当前位置

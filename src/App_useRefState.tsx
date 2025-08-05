@@ -1,7 +1,11 @@
 //react
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { count } from './count';
 
-function useRefState<T>(initialValue: () => T): [() => T, (fn: (prev: T) => T) => void] {
+function useRefState<T>(
+  initialValue: () => T,
+): [() => T, (fn: (prev: T) => T) => void] {
   const [state, _setState] = useState(initialValue);
   const ref = useRef(state);
   const setState = useCallback((fn: (prev: T) => T) => {
@@ -14,78 +18,114 @@ function useRefState<T>(initialValue: () => T): [() => T, (fn: (prev: T) => T) =
   return [getState, setState];
 }
 
+interface MoveItemProps {
+  x: () => number;
+  index: number;
+}
+
+const MoveItem = ({ x, index }: MoveItemProps) => {
+  // 去掉注释的情况下，性能会大幅提升，因为不再需要用 react 重新渲染了
+  const computedStyle = useMemo(() => ({
+    position: 'absolute' as const,
+    top: 200 + 10 * index,
+    // left: x.peek() - 50,
+    transform: `translateX(${x() - 50}px)`,
+    zIndex: 9999,
+    width: (1000 + index) % 10,
+    height: 10,
+    backgroundColor: 'red',
+  }), [index]);
+  const divRef = useRef<HTMLDivElement>(null);
+  // useSignalEffect(() => {
+  //   if (elementRef.value) {
+  //     elementRef.value.style.left = `${x.value - 50}px`;
+  //   }
+  // });
+
+  // !! 很有意思，在 preact_signals 中也有类似的优化方案跳过整个react 树的 diff ，但是在这里就是没有很好的效果，
+  useLayoutEffect(() => {
+    if (divRef.current) {
+      divRef.current.style.transform = `translateX(${x() - 50}px)`;
+    }
+  }, [x()]);
+
+  const result = useMemo(() => {
+    return <div style={computedStyle} ref={divRef} />;
+  }, []);
+
+  return result;
+};
+
+interface TrackProps {
+  x: () => number;
+  setX: (fn: (prev: number) => number) => void;
+}
+
+const Track = ({ x, setX }: TrackProps) => {
+  // div 起始位置
+  const startX = useRef(0);
+  const mouseStartX = useRef(0);
+  const dragging = useRef(false);
+  const onMouseDown = useMemo(() => {
+    return (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      mouseStartX.current = ev.clientX;
+      dragging.current = true;
+      setX(() => ev.clientX);
+      startX.current = ev.clientX;
+    };
+  }, [setX]);
+
+  const onMouseMove = useMemo(() => {
+    return (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      if (!dragging.current) return;
+      // 移动距离
+      // console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
+      // 设置最终位置
+      const distance = ev.clientX - mouseStartX.current;
+      // 所以拿不到更新后的 startX 和 moveStartX
+      setX(() => startX.current + distance);
+    };
+  }, [setX]);
+  const onMouseUpOrBlue = useMemo(() => {
+    return () => {
+      dragging.current = false;
+    };
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 100,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        height: 100,
+        backgroundColor: 'green',
+      }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUpOrBlue}
+      onBlur={onMouseUpOrBlue}
+    >
+      useRefState 拖动这个 div 改变上面 div 的位置 {x()}
+    </div>
+  );
+};
+
+const list = Array.from({ length: count })
+  .fill(0)
+  .map((item, index) => index);
 
 const App = () => {
   // 当前位置
   const [x, setX] = useRefState(() => 0);
-  // div 起始位置
-  const startX = useRef(0);
-  // move 起始位置
-  const moveStartX = useRef(0);
-  const drag = useRef(false);
-
-  // 每次触发 mouseMove 都会触发 render
-  console.log('render');
-
-  const dragStart = useCallback((ev) => {
-    startX.current = x();
-    moveStartX.current = ev.clientX;
-    drag.current = true;
-
-    // // 这个 dragging 是 setState 之前的 dragging
-    // window.addEventListener('mousemove', dragging);
-    // window.addEventListener('mouseup', dragEnd);
-    // window.addEventListener('blur', dragEnd);
-  }, [x])
-
-  // 实际上这个会变
-  const dragging = useCallback((ev) => {
-    if (!drag.current) {
-      return;
-    }
-    // 所以拿不到更新后的 startX 和 moveStartX
-    console.log({ startX: startX.current, moveStartX: moveStartX.current });
-    // 移动距离
-    const distance = ev.clientX - moveStartX.current;
-    // 设置最终位置
-    setX(() => startX.current + distance);
-  }, [setX]);
-
-  const dragEnd = useCallback(() => {
-    drag.current = false;
-  }, []);
-
   return (
     <>
-      <div
-        style={{
-          position: 'absolute',
-          top: 100,
-          left: x() - 50,
-          zIndex: 9999,
-          width: 100,
-          height: 100,
-          backgroundColor: 'red',
-        }}
-      ></div>
-
-      <div
-        style={{
-          position: 'absolute',
-          top: 200,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          height: 100,
-          backgroundColor: 'green',
-        }}
-        onMouseDown={dragStart}
-        onMouseUp={dragEnd}
-        onBlur={dragEnd}
-        onMouseMove={dragging}
-      >
-        useRefState 拖动这个 div 改变上面 div 的位置 {x()}
-      </div>
+      <Track x={x} setX={setX} />
+      {list.map((item) => {
+        return <MoveItem x={x} index={item} key={item} />;
+      })}
     </>
   );
 };

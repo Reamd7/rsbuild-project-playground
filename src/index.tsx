@@ -1,13 +1,13 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import App from './App_preact_signals'; 
+import { createRoot } from 'react-dom/client';
+import App from './App_useRefState'; 
 
 const rootEl = document.getElementById('root');
+
 if (rootEl) {
-  ReactDOM.render(
+  createRoot(rootEl).render(
     <React.StrictMode>
       <App />
-    </React.StrictMode>,
-    rootEl
+    </React.StrictMode>
   );
 }

@@ -1,23 +1,27 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import type React from 'react';
 import { useSignalRef } from '@preact/signals-react/utils';
-import { createSignal, withSolid, createComputed, createMemo } from 'react-solid-state';
+import { createSignal, withSolid, createComputed, createMemo, useSignal, useEffect } from 'react-solid-state';
 import type { Signal } from 'solid-js/types/reactive/signal.d.ts';
+import { count } from './count';
 
 type MoveItemProps = {
   x: Signal<number>;
+  index: number
 };
 const MoveItem = withSolid<MoveItemProps>((props) => {
   const getX = props.x[0];
+  const [index, setIndex] = useSignal(props.index) as Signal<number>;
+
   // 去掉注释的情况下，性能会大幅提升，因为不再需要用 react 重新渲染了
   const computedStyle = createMemo<React.CSSProperties>(() => ({
     position: 'absolute',
-    top: 100,
+    top: 200 + 10 * index(),
     // left: x.peek() - 50,
-    left: getX() - 50,
+    transform: `translateX(${getX() - 50}px)`,
     zIndex: 9999,
-    width: 100,
-    height: 100,
+    width: (1000 + index()) % 10,
+    height: 10,
     backgroundColor: 'red',
   }));
 
@@ -26,7 +30,9 @@ const MoveItem = withSolid<MoveItemProps>((props) => {
   return () => <div style={computedStyle()} ref={elementRef} />
 });
 
-const Track = withSolid<MoveItemProps>((props) => {
+const list = (Array.from({ length: count }).fill(0).map((item, index) => index));
+
+const Track = withSolid<{ x: Signal<number> }>((props) => {
   const [getX, setX] = props.x;
   // div 起始位置
   const [startX, setStartX]: Signal<number> = createSignal(0);
@@ -66,7 +72,7 @@ const Track = withSolid<MoveItemProps>((props) => {
       <div
         style={{
           position: 'absolute',
-          top: 200,
+          top: 100,
           left: 0,
           right: 0,
           zIndex: 9999,
@@ -90,8 +96,10 @@ const App = withSolid(() => {
 
   return () => (
     <>
-      <MoveItem x={x} />
       <Track x={x} />
+      {list.map(item => {
+        return <MoveItem x={x} index={item} key={item} />
+      })}
     </>
   );
 });
