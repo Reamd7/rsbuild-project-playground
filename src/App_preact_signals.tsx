@@ -17,7 +17,7 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
     position: 'absolute',
     top: 200 + 10 * index,
     // left: x.peek() - 50,
-    left: x.value - 50,
+    transform: `translateX(${x.value - 50}px)`,
     zIndex: 9999,
     width: (1000 + index) % 10,
     height: 10,
@@ -99,7 +99,7 @@ const Track = ({ x }: TrackProps) => {
   return track;
 };
 
-const list = signal(Array.from({ length: 3000 }).fill(0).map((item, index) => index));
+const list = signal(Array.from({ length: 300 }).fill(0).map((item, index) => index));
 const App = () => {
   useSignals();
   // 当前位置
