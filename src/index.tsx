@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
+import App from './App_preact_signals'; 
 
 const rootEl = document.getElementById('root');
 if (rootEl) {

@@ -22,6 +22,7 @@ const App = () => {
   const startX = useRef(0);
   // move 起始位置
   const moveStartX = useRef(0);
+  const drag = useRef(false);
 
   // 每次触发 mouseMove 都会触发 render
   console.log('render');
@@ -29,15 +30,19 @@ const App = () => {
   const dragStart = useCallback((ev) => {
     startX.current = x();
     moveStartX.current = ev.clientX;
+    drag.current = true;
 
-    // 这个 dragging 是 setState 之前的 dragging
-    window.addEventListener('mousemove', dragging);
-    window.addEventListener('mouseup', dragEnd);
-    window.addEventListener('blur', dragEnd);
+    // // 这个 dragging 是 setState 之前的 dragging
+    // window.addEventListener('mousemove', dragging);
+    // window.addEventListener('mouseup', dragEnd);
+    // window.addEventListener('blur', dragEnd);
   }, [x])
 
   // 实际上这个会变
   const dragging = useCallback((ev) => {
+    if (!drag.current) {
+      return;
+    }
     // 所以拿不到更新后的 startX 和 moveStartX
     console.log({ startX: startX.current, moveStartX: moveStartX.current });
     // 移动距离
@@ -47,10 +52,8 @@ const App = () => {
   }, [setX]);
 
   const dragEnd = useCallback(() => {
-    window.removeEventListener('mousemove', dragging);
-    window.removeEventListener('mouseup', dragEnd);
-    window.removeEventListener('blur', dragEnd);
-  }, [dragging]);
+    drag.current = false;
+  }, []);
 
   return (
     <>
@@ -76,9 +79,12 @@ const App = () => {
           height: 100,
           backgroundColor: 'green',
         }}
-        onMouseDown={ev => dragStart(ev.nativeEvent)}
+        onMouseDown={dragStart}
+        onMouseUp={dragEnd}
+        onBlur={dragEnd}
+        onMouseMove={dragging}
       >
-        拖动这个 div 改变上面 div 的位置
+        useRefState 拖动这个 div 改变上面 div 的位置 {x()}
       </div>
     </>
   );

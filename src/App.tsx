@@ -1,17 +1,20 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import type React from 'react';
-import { useSignalEffect, useSignals } from '@preact/signals-react/runtime';
-import { useSignal, useComputed, Signal } from '@preact/signals-react';
 import { useSignalRef } from '@preact/signals-react/utils';
+import { createSignal, withSolid, createComputed, createMemo } from 'react-solid-state';
+import type { Signal } from 'solid-js/types/reactive/signal.d.ts';
 
-const MoveItem = ({ x }: { x: Signal<number> }) => {
+type MoveItemProps = {
+  x: Signal<number>;
+};
+const MoveItem = withSolid<MoveItemProps>((props) => {
+  const getX = props.x[0];
   // 去掉注释的情况下，性能会大幅提升，因为不再需要用 react 重新渲染了
-  useSignals();
-  const computedStyle = useComputed<React.CSSProperties>(() => ({
+  const computedStyle = createMemo<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 100,
     // left: x.peek() - 50,
-    left: x.value - 50,
+    left: getX() - 50,
     zIndex: 9999,
     width: 100,
     height: 100,
@@ -20,51 +23,45 @@ const MoveItem = ({ x }: { x: Signal<number> }) => {
 
   const elementRef = useSignalRef<HTMLDivElement | null>(null);
 
-  // useSignalEffect(() => {
-  //   if (elementRef.value) {
-  //     elementRef.value.style.left = `${x.value - 50}px`;
-  //   }
-  // });
+  return () => <div style={computedStyle()} ref={elementRef} />
+});
 
-  return useComputed(() => {
-    return <div style={computedStyle.value} ref={elementRef} />;
-  });
-};
-
-const Track = ({ x }: { x: Signal<number> }) => {
-  useSignals();
+const Track = withSolid<MoveItemProps>((props) => {
+  const [getX, setX] = props.x;
   // div 起始位置
-  const startX = useSignal(0);
-  const mouseStartX = useSignal(0);
-  const dragging = useSignal(false);
-  const onMouseDown = useComputed(() => {
+  const [startX, setStartX]: Signal<number> = createSignal(0);
+  const [mouseStartX, setMouseStartX]: Signal<number> = createSignal(0);
+  const [dragging, setDragging]: Signal<boolean> = createSignal(false);
+  const onMouseDown = createMemo(() => {
     return (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      mouseStartX.value = ev.clientX;
-      dragging.value = true;
-      x.value = ev.clientX;
-      startX.value = x.peek();
+      setMouseStartX(ev.clientX);
+      setDragging(true);
+      setX(ev.clientX);
+      setStartX(getX());
     };
   });
-  const onMouseMove = useComputed(() => {
+  const onMouseMove = createMemo(() => {
     return (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      if (!dragging.value) return;
-      requestAnimationFrame(() => {
-        // 移动距离
-        console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
-        // 设置最终位置
-        const distance = ev.clientX - mouseStartX.peek();
-        // 所以拿不到更新后的 startX 和 moveStartX
-        x.value = startX.peek() + distance;
-      })
+      if (!dragging()) return;
+      // 移动距离
+      console.log([getX(), startX(), mouseStartX()]);
+      // 设置最终位置
+      const distance = ev.clientX - mouseStartX();
+      // 所以拿不到更新后的 startX 和 moveStartX
+      setX(startX() + distance);
     };
   });
-  const onMouseUpOrBlue = useComputed(() => {
+  const onMouseUpOrBlue = createMemo(() => {
     return () => {
-      dragging.value = false;
+      setDragging(false);
     };
   });
 
-  const track = useComputed(() => {
+  const text = createMemo(() => {
+    return `react solid state 拖动这个 div 改变上面 div 的位置 ${getX()}`;
+  });
+
+  return (() => {
     return (
       <div
         style={{
@@ -76,29 +73,26 @@ const Track = ({ x }: { x: Signal<number> }) => {
           height: 100,
           backgroundColor: 'green',
         }}
-        onMouseDown={onMouseDown.value}
-        onMouseMove={onMouseMove.value}
-        onMouseUp={onMouseUpOrBlue.value}
-        onBlur={onMouseUpOrBlue.value}
+        onMouseDown={onMouseDown()}
+        onMouseMove={onMouseMove()}
+        onMouseUp={onMouseUpOrBlue()}
+        onBlur={onMouseUpOrBlue()}
       >
-        拖动这个 div 改变上面 div 的位置 {x}
+        {text()}
       </div>
     );
   });
+});
 
-  return track;
-};
-
-const App = () => {
-  useSignals();
+const App = withSolid(() => {
   // 当前位置
-  const x = useSignal(0);
+  const x: Signal<number> = createSignal(0);
 
-  return (
+  return () => (
     <>
       <MoveItem x={x} />
       <Track x={x} />
     </>
   );
-};
+});
 export default App;

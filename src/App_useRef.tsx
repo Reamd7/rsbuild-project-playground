@@ -67,7 +67,7 @@ const App = () => {
           dragging.current = false;
         }}
       >
-        拖动这个 div 改变上面 div 的位置
+        useRef 拖动这个 div 改变上面 div 的位置 {x}
       </div>
     </>
   );
