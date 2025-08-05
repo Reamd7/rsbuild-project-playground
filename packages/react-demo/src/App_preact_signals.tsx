@@ -12,7 +12,7 @@ interface MoveItemProps {
 
 const MoveItem = ({ x, index }: MoveItemProps) => {
   // 去掉注释的情况下，性能会大幅提升，因为不再需要用 react 重新渲染了
-  // useSignals();
+  useSignals();
   const computedStyle = useComputed<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 200 + 10 * index,
