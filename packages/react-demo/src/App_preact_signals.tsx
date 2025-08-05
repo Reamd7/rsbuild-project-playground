@@ -3,7 +3,6 @@ import type React from 'react';
 import { useSignalEffect, useSignals } from '@preact/signals-react/runtime';
 import { useSignal, useComputed, Signal, signal } from '@preact/signals-react';
 import { For, useSignalRef } from '@preact/signals-react/utils';
-import { useRef } from 'react';
 import { count } from './count';
 
 interface MoveItemProps { 
@@ -17,7 +16,7 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   const computedStyle = useComputed<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 200 + 10 * index,
-    transform: `translateX(${x.peek() - 50}px)`,
+    transform: `translateX(${x.peek() + 50}px)`,
     // transform: `translateX(${x.value - 50}px)`,
     zIndex: 9999,
     width: (1000 + index) % 10,
@@ -29,7 +28,7 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
 
   useSignalEffect(() => {
     if (elementRef.value) {
-      elementRef.value.style.transform = `translateX(${x.value - 50}px)`;
+      elementRef.value.style.transform = `translateX(${x.value + 50}px)`;
     }
   });
 

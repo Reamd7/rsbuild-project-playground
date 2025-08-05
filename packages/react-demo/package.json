@@ -19,7 +19,6 @@
     "react-solid-state": "^0.27.3"
   },
   "devDependencies": {
-    "solid-js": "1.9.7",
     "@biomejs/biome": "2.0.6",
     "@eslint/js": "^9.30.0",
     "@rsbuild/core": "^1.4.13",
@@ -31,6 +30,9 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
     "prettier": "^3.6.2",
+    "react-fps": "^1.0.6",
+    "react-scan": "^0.4.3",
+    "solid-js": "1.9.7",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.1"
   }

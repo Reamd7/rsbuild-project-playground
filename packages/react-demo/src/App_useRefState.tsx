@@ -5,9 +5,10 @@ import { count } from './count';
 
 function useRefState<T>(
   initialValue: () => T,
-): [() => T, (fn: (prev: T) => T) => void] {
+): [() => T, T, (fn: (prev: T) => T) => void] {
   const [state, _setState] = useState(initialValue);
   const ref = useRef(state);
+  ref.current = state;
   const setState = useCallback((fn: (prev: T) => T) => {
     _setState((prev) => {
       ref.current = fn(prev);
@@ -15,11 +16,11 @@ function useRefState<T>(
     });
   }, []);
   const getState = useCallback(() => ref.current, []);
-  return [getState, setState];
+  return [getState, state, setState];
 }
 
 interface MoveItemProps {
-  x: () => number;
+  x: number;
   index: number;
 }
 
@@ -29,12 +30,12 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
     position: 'absolute' as const,
     top: 200 + 10 * index,
     // left: x.peek() - 50,
-    transform: `translateX(${x() - 50}px)`,
+    transform: `translateX(${x - 50}px)`,
     zIndex: 9999,
     width: (1000 + index) % 10,
     height: 10,
     backgroundColor: 'red',
-  }), [index]);
+  }), [index, x]);
   const divRef = useRef<HTMLDivElement>(null);
   // useSignalEffect(() => {
   //   if (elementRef.value) {
@@ -43,15 +44,15 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   // });
 
   // !! 很有意思，在 preact_signals 中也有类似的优化方案跳过整个react 树的 diff ，但是在这里就是没有很好的效果，
-  useLayoutEffect(() => {
-    if (divRef.current) {
-      divRef.current.style.transform = `translateX(${x() - 50}px)`;
-    }
-  }, [x()]);
+  // useLayoutEffect(() => {
+  //   if (divRef.current) {
+  //     divRef.current.style.transform = `translateX(${x() - 50}px)`;
+  //   }
+  // }, [x()]);
 
   const result = useMemo(() => {
     return <div style={computedStyle} ref={divRef} />;
-  }, []);
+  }, [computedStyle]);
 
   return result;
 };
@@ -119,10 +120,10 @@ const list = Array.from({ length: count })
 
 const App = () => {
   // 当前位置
-  const [x, setX] = useRefState(() => 0);
+  const [getX, x, setX] = useRefState(() => 0);
   return (
     <>
-      <Track x={x} setX={setX} />
+      <Track x={getX} setX={setX} />
       {list.map((item) => {
         return <MoveItem x={x} index={item} key={item} />;
       })}
