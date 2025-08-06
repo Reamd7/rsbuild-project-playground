@@ -4,6 +4,8 @@ import { useSignalEffect, useSignals } from '@preact/signals-react/runtime';
 import { useSignal, useComputed, Signal, signal } from '@preact/signals-react';
 import { For, useSignalRef } from '@preact/signals-react/utils';
 import { count } from './count';
+import { batch } from '@preact/signals-react';
+import { useRef } from 'react';
 
 interface MoveItemProps { 
   x: Signal<number>,
@@ -22,6 +24,7 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
     width: (1000 + index) % 10,
     height: 10,
     backgroundColor: 'red',
+    willChange: "transform",
   }));
 
   const elementRef = useSignalRef<HTMLDivElement | null>(null);
@@ -44,33 +47,34 @@ interface TrackProps {
 const Track = ({ x }: TrackProps) => {
   useSignals();
   // div 起始位置
-  const startX = useSignal(0);
-  const mouseStartX = useSignal(0);
-  const dragging = useSignal(false);
+  const startX = useRef(0);
+  const mouseStartX = useRef(0);
+  const dragging = useRef(false);
   const onMouseDown = useComputed(() => {
     return (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      mouseStartX.value = ev.clientX;
-      dragging.value = true;
+      mouseStartX.current = ev.clientX;
+      dragging.current = true;
       x.value = ev.clientX;
-      startX.value = x.peek();
+      startX.current = x.peek();
     };
   });
   
   const onMouseMove = useComputed(() => {
-    if (!dragging.value) return () => {};
-
     return ((ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      // 移动距离
-      // console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
-      // 设置最终位置
-      const distance = ev.clientX - mouseStartX.peek();
-      // 所以拿不到更新后的 startX 和 moveStartX
-      x.value = startX.peek() + distance;
+      if (!dragging.current) return ;
+      batch(() => {
+        // 移动距离
+        // console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
+        // 设置最终位置
+        const distance = ev.clientX - mouseStartX.current;
+        // 所以拿不到更新后的 startX 和 moveStartX  
+        x.value = startX.current + distance;
+      })
     });
   });
   const onMouseUpOrBlue = useComputed(() => {
     return () => {
-      dragging.value = false;
+      dragging.current = false;
     };
   });
 

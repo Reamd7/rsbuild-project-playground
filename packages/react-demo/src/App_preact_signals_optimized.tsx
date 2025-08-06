@@ -1,9 +1,10 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import type React from 'react';
 import { useSignalEffect, useSignals } from '@preact/signals-react/runtime';
-import { useSignal, useComputed, Signal, signal } from '@preact/signals-react';
+import { useSignal, useComputed, Signal, signal, batch } from '@preact/signals-react';
 import { For, useSignalRef } from '@preact/signals-react/utils';
 import { count } from './count';
+import { useRef } from 'react';
 
 interface MoveItemProps { 
   x: Signal<number>,
@@ -15,15 +16,17 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   // useSignals();
   
   // 预计算静态样式，避免每次重新计算
-  const staticStyle: React.CSSProperties = {
+  const staticStyle = useComputed<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 200 + 10 * index,
-    transform: `translateX(-50px)`, // 初始位置
+    transform: `translateX(${x.peek() + 50}px)`,
+    // transform: `translateX(${x.value - 50}px)`,
     zIndex: 9999,
     width: (1000 + index) % 10,
     height: 10,
     backgroundColor: 'red',
-  };
+    willChange: "transform",
+  }));
 
   const elementRef = useSignalRef<HTMLDivElement | null>(null);
 
@@ -32,12 +35,13 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
     const element = elementRef.value;
     if (element) {
       // 使用 transform3d 启用硬件加速
-      element.style.transform = `translate3d(${x.value + 50}px, 0, 0)`;
+      element.style.transform = `translateX(${x.value + 50}px)`;
     }
   });
 
   // 直接返回 JSX，避免不必要的 useComputed 包装
-  return <div style={staticStyle} ref={elementRef} />;
+  return <div style={staticStyle.value} ref={elementRef} />;
+
 };
 
 interface TrackProps {
@@ -48,10 +52,10 @@ const Track = ({ x }: TrackProps) => {
   useSignals();
   
   // 使用 ref 而不是 signal 来存储不需要响应式的状态
-  const startXRef = { current: 0 };
-  const mouseStartXRef = { current: 0 };
-  const draggingRef = { current: false };
-  const rafIdRef = { current: 0 };
+  const startXRef = useRef(0);
+  const mouseStartXRef = useRef(0);
+  const draggingRef = useRef(false);
+  const rafIdRef = useRef(0);
   
   // 优化的事件处理器，减少函数创建开销
   const onMouseDown = (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -70,8 +74,10 @@ const Track = ({ x }: TrackProps) => {
     }
     
     rafIdRef.current = requestAnimationFrame(() => {
-      const distance = ev.clientX - mouseStartXRef.current;
-      x.value = startXRef.current + distance;
+      batch(() => {
+        const distance = ev.clientX - mouseStartXRef.current;
+        x.value = startXRef.current + distance;
+      })
     });
   };
   
@@ -83,38 +89,40 @@ const Track = ({ x }: TrackProps) => {
   };
   
   // 添加全局事件监听以改善拖拽体验
-  useSignalEffect(() => {
-    const handleGlobalMouseMove = (ev: MouseEvent) => {
-      if (!draggingRef.current) return;
+  // useSignalEffect(() => {
+  //   const handleGlobalMouseMove = (ev: MouseEvent) => {
+  //     if (!draggingRef.current) return;
       
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
+  //     if (rafIdRef.current) {
+  //       cancelAnimationFrame(rafIdRef.current);
+  //     }
       
-      rafIdRef.current = requestAnimationFrame(() => {
-        const distance = ev.clientX - mouseStartXRef.current;
-        x.value = startXRef.current + distance;
-      });
-    };
+  //     rafIdRef.current = requestAnimationFrame(() => {
+  //       batch(() => {
+  //         const distance = ev.clientX - mouseStartXRef.current;
+  //         x.value = startXRef.current + distance;
+  //       })
+  //     });
+  //   };
     
-    const handleGlobalMouseUp = () => {
-      draggingRef.current = false;
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-    };
+  //   const handleGlobalMouseUp = () => {
+  //     draggingRef.current = false;
+  //     if (rafIdRef.current) {
+  //       cancelAnimationFrame(rafIdRef.current);
+  //     }
+  //   };
     
-    document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
-    document.addEventListener('mouseup', handleGlobalMouseUp, { passive: true });
+  //   document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
+  //   document.addEventListener('mouseup', handleGlobalMouseUp, { passive: true });
     
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-    };
-  });
+  //   return () => {
+  //     document.removeEventListener('mousemove', handleGlobalMouseMove);
+  //     document.removeEventListener('mouseup', handleGlobalMouseUp);
+  //     if (rafIdRef.current) {
+  //       cancelAnimationFrame(rafIdRef.current);
+  //     }
+  //   };
+  // });
 
   // 直接返回 JSX，避免不必要的 useComputed
   return (
