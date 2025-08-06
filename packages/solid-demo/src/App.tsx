@@ -8,6 +8,7 @@ import {
   splitProps,
 } from 'solid-js';
 import type { JSX, Signal } from 'solid-js';
+import FpsView from './FpsView';
 
 interface MoveItemProps {
   x: Signal<number>;
@@ -89,6 +90,7 @@ const App = () => {
   // div 起始位置
   return (
     <>
+      <FpsView />
       <Track x={x} />
       <For each={list}>{(item) => <MoveItem x={x} index={item} />}</For>
     </>
