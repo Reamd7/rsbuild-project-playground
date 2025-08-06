@@ -18,8 +18,8 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   useSignals();
   const computedStyle = useComputed<React.CSSProperties & any>(() => ({
     top: 200 + 10 * index,
-    transform: `translate(${x.peek() + 50}px)`,
-    // transform: `translateX(${x.value - 50}px)`,
+    // transform: `translate(${x.peek() + 50}px)`,
+    transform: `translateX(${x.value - 50}px)`,
     width: (1000 + index) % 10,
   }));
 
@@ -29,15 +29,13 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
     return [styles.move_item, styles[`w-${(index % 10) + 1}`]].join(' ');
   })
 
-  useSignalEffect(() => {
-    if (elementRef.value) {
-      elementRef.value.style.transform = `translateX(${x.value + 50}px)`;
-    }
-  });
+  // useSignalEffect(() => {
+  //   if (elementRef.value) {
+  //     elementRef.value.style.transform = `translateX(${x.value + 50}px)`;
+  //   }
+  // });
 
-  return useComputed(() => {
-    return <div className={className.value} style={computedStyle.value} ref={elementRef} />;
-  });
+  return <div className={className.value} style={computedStyle.value} ref={elementRef} />;
 };
 
 interface TrackProps {
