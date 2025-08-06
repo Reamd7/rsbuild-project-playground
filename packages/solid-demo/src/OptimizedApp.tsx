@@ -23,7 +23,6 @@ const MoveItem = (props: MoveItemProps) => {
   
   // 只有transform会变化，其他样式保持静态
   const transform = createMemo(() => `translateX(${getX() - 50}px)`);
-  
   return (
     <div 
       style={{
@@ -35,6 +34,7 @@ const MoveItem = (props: MoveItemProps) => {
         height: '10px',
         'background-color': 'red',
         'will-change': 'transform', // 优化GPU加速
+        // 'user-select': 'none',
       }} 
     />
   );
@@ -62,13 +62,13 @@ const Track = (props: TrackProps) => {
     if (!dragging) return;
     
     // 使用requestAnimationFrame节流更新
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(() => {
+    // if (rafId) cancelAnimationFrame(rafId);
+    // rafId = requestAnimationFrame(() => {
       const distance = ev.clientX - mouseStartX;
       batch(() => {
         setX(startX + distance);
       });
-    });
+    // });
   };
 
   const onMouseUpOrBlue = () => {
