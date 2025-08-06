@@ -1,98 +1,77 @@
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 import './App.css';
-import {
-  createComputed,
-  createMemo,
-  createSignal,
-  For,
-  splitProps,
-} from 'solid-js';
-import type { JSX, Signal } from 'solid-js';
+import { createSignal } from 'solid-js';
 import FpsView from './FpsView';
+import NormalApp from './NormalApp';
+import OptimizedApp from './OptimizedApp';
 
-interface MoveItemProps {
-  x: Signal<number>;
-  index: number;
-}
-
-const MoveItem = (props: MoveItemProps) => {
-  const [getX] = props.x;
-  const computedStyle = createMemo<JSX.CSSProperties>(() => ({
-    position: 'absolute',
-    top: `${200 + 10 * props.index}px`,
-    transform: `translateX(${getX() - 50}px)`,
-    // left: x.value - 50,
-    'z-index': 9999,
-    width: `${(1000 + props.index) % 10}px`,
-    height: '10px',
-    'background-color': 'red',
-  }));
-  return <div style={computedStyle()} />;
-};
-
-interface TrackProps {
-  x: Signal<number>;
-}
-
-const Track = (props: TrackProps) => {
-  const [getX, setX] = props.x;
-  let startX = 0;
-  let mouseStartX = 0;
-  let dragging = false;
-  const onMouseDown = (ev: MouseEvent) => {
-    mouseStartX = ev.clientX;
-    dragging = true;
-    setX(ev.clientX);
-    startX = ev.clientX;
-  };
-
-  const onMouseMove = (ev: MouseEvent) => {
-    if (!dragging) return;
-    // 移动距离
-    // console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
-    // 设置最终位置
-    const distance = ev.clientX - mouseStartX;
-    // 所以拿不到更新后的 startX 和 moveStartX
-    setX(startX + distance);
-  };
-
-  const onMouseUpOrBlue = () => {
-    dragging = false;
-  };
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: '100px',
-        left: 0,
-        right: 0,
-        'z-index': 9999,
-        height: `100px`,
-        'background-color': 'green',
-      }}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUpOrBlue}
-      onBlur={onMouseUpOrBlue}
-    >
-      solidjs 拖动这个 div 改变上面 div 的位置 {getX()}
-    </div>
-  );
-};
-
-const list = Array.from({ length: 3000 })
-  .fill(0)
-  .map((item, index) => index);
+type AppVersion = 'normal' | 'optimized';
 
 const App = () => {
-  const x = createSignal(0);
-  // div 起始位置
+  const [currentApp, setCurrentApp] = createSignal<AppVersion>('normal');
+
+  const renderApp = () => {
+    switch (currentApp()) {
+      case 'normal':
+        return <NormalApp />;
+      case 'optimized':
+        return <OptimizedApp />;
+      default:
+        return <NormalApp />;
+    }
+  };
+
   return (
     <>
       <FpsView />
-      <Track x={x} />
-      <For each={list}>{(item) => <MoveItem x={x} index={item} />}</For>
+      <div style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        'z-index': 10000,
+        'background-color': 'white',
+        padding: '10px',
+        border: '1px solid #ccc',
+        'border-radius': '5px',
+        'box-shadow': '0 2px 10px rgba(0,0,0,0.1)'
+      }}>
+        <h3 style={{ margin: '0 0 10px 0', 'font-size': '14px' }}>SolidJS 性能对比测试</h3>
+        <div style={{ display: 'flex', 'flex-direction': 'column', gap: '5px' }}>
+          <button 
+            onClick={() => setCurrentApp('normal')}
+            style={{
+              padding: '5px 10px',
+              'background-color': currentApp() === 'normal' ? '#007acc' : '#f0f0f0',
+              color: currentApp() === 'normal' ? 'white' : 'black',
+              border: 'none',
+              'border-radius': '3px',
+              cursor: 'pointer',
+              'font-size': '12px'
+            }}
+          >
+             普通版本
+           </button>
+           <button 
+             onClick={() => setCurrentApp('optimized')}
+             style={{
+               padding: '5px 10px',
+               'background-color': currentApp() === 'optimized' ? '#007acc' : '#f0f0f0',
+               color: currentApp() === 'optimized' ? 'white' : 'black',
+               border: 'none',
+               'border-radius': '3px',
+               cursor: 'pointer',
+               'font-size': '12px'
+             }}
+           >
+             优化版本
+          </button>
+        </div>
+        <div style={{ 'margin-top': '10px', 'font-size': '11px', color: '#666' }}>
+          当前: {currentApp()}<br/>
+          拖动绿色区域测试性能<br/>
+          观察左上角 FPS 数值
+        </div>
+      </div>
+      {renderApp()}
     </>
   );
 };

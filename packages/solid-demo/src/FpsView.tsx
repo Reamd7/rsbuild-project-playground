@@ -1,4 +1,4 @@
-import { For } from 'solid-js';
+import { For, createMemo } from 'solid-js';
 import useFps from './useFps';
 import useStyles from './useStyles';
 
@@ -32,14 +32,21 @@ const FpsView = (props: ComponentProps) => {
     () => fps().length
   );
 
+  // 缓存FPS文本显示
+  const fpsText = createMemo(() => `${currentFps()} FPS (${avgFps()} Avg)`);
+  
+  // 缓存最大FPS值以减少重复计算
+  const maxFpsValue = createMemo(() => maxFps());
+
   return (
     <div style={wrapperStyle()}>
-      <span>{currentFps()} FPS ({avgFps()} Avg)</span>
+      <span>{fpsText()}</span>
       <div style={graphStyle()}>
         <For each={fps()}>
-          {(val, i) => (
-            <div style={barStyle((height * val) / maxFps(), i())} />
-          )}
+          {(val, i) => {
+            const barHeight = createMemo(() => (height * val) / maxFpsValue());
+            return <div style={barStyle(barHeight(), i())} />;
+          }}
         </For>
       </div>
     </div>
