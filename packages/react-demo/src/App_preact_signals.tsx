@@ -6,6 +6,7 @@ import { For, useSignalRef } from '@preact/signals-react/utils';
 import { count } from './count';
 import { batch } from '@preact/signals-react';
 import { useRef } from 'react';
+import styles from './App.module.css';
 
 interface MoveItemProps { 
   x: Signal<number>,
@@ -15,19 +16,18 @@ interface MoveItemProps {
 const MoveItem = ({ x, index }: MoveItemProps) => {
   // 去掉注释的情况下，性能会大幅提升，因为不再需要用 react 重新渲染了
   useSignals();
-  const computedStyle = useComputed<React.CSSProperties>(() => ({
-    position: 'absolute',
+  const computedStyle = useComputed<React.CSSProperties & any>(() => ({
     top: 200 + 10 * index,
-    transform: `translateX(${x.peek() + 50}px)`,
+    transform: `translate(${x.peek() + 50}px)`,
     // transform: `translateX(${x.value - 50}px)`,
-    zIndex: 9999,
     width: (1000 + index) % 10,
-    height: 10,
-    backgroundColor: 'red',
-    willChange: "transform",
   }));
 
   const elementRef = useSignalRef<HTMLDivElement | null>(null);
+
+  const className = useComputed(() => {
+    return [styles.move_item, styles[`w-${(index % 10) + 1}`]].join(' ');
+  })
 
   useSignalEffect(() => {
     if (elementRef.value) {
@@ -36,7 +36,7 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   });
 
   return useComputed(() => {
-    return <div style={computedStyle.value} ref={elementRef} />;
+    return <div className={className.value} style={computedStyle.value} ref={elementRef} />;
   });
 };
 
@@ -81,21 +81,14 @@ const Track = ({ x }: TrackProps) => {
   const track = useComputed(() => {
     return (
       <div
-        style={{
-          position: 'absolute',
-          top: 100,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          height: 100,
-          backgroundColor: 'green',
-        }}
+        className={styles.track}
         onMouseDown={onMouseDown.value}
         onMouseMove={onMouseMove.value}
         onMouseUp={onMouseUpOrBlue.value}
         onBlur={onMouseUpOrBlue.value}
       >
-        preact signals 拖动这个 div 改变上面 div 的位置 {x}
+        preact signals 拖动这个 div 改变上面 div 的位置 
+        {/* <span>{x}</span> */}
       </div>
     );
   });
