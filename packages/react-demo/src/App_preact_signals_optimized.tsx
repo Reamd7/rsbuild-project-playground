@@ -13,7 +13,7 @@ interface MoveItemProps {
 
 const MoveItem = ({ x, index }: MoveItemProps) => {
   // 移除 useSignals() 以获得最佳性能
-  // useSignals();
+  useSignals();
   
   // 预计算静态样式，避免每次重新计算
   const staticStyle = useComputed<React.CSSProperties>(() => ({
