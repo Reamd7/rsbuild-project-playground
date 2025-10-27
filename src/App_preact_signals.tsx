@@ -17,8 +17,8 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   const computedStyle = useComputed<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 200 + 10 * index,
-    transform: `translateX(${x.peek() - 50}px)`,
-    // transform: `translateX(${x.value - 50}px)`,
+    // transform: `translateX(${x.peek() - 50}px)`,
+    transform: `translateX(${x.value - 50}px)`,
     zIndex: 9999,
     width: (1000 + index) % 10,
     height: 10,
@@ -27,11 +27,11 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
 
   const elementRef = useSignalRef<HTMLDivElement | null>(null);
 
-  useSignalEffect(() => {
-    if (elementRef.value) {
-      elementRef.value.style.transform = `translateX(${x.value - 50}px)`;
-    }
-  });
+  // useSignalEffect(() => {
+  //   if (elementRef.value) {
+  //     elementRef.value.style.transform = `translateX(${x.value - 50}px)`;
+  //   }
+  // });
 
   return useComputed(() => {
     return <div style={computedStyle.value} ref={elementRef} />;
