@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useSignals } from '@preact/signals-react/runtime';
+import { useSignalEffect, useSignals } from '@preact/signals-react/runtime';
 import { useSignal, useComputed, type Signal, signal } from '@preact/signals-react';
 import { For, useSignalRef } from '@preact/signals-react/utils';
 import { count } from './count';
@@ -15,8 +15,7 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   const computedStyle = useComputed<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 200 + 10 * index,
-    // transform: `translateX(${x.peek() - 50}px)`,
-    transform: `translateX(${x.value - 50}px)`,
+    transform: `translateX(${x.peek() - 50}px)`,
     zIndex: 9999,
     width: (1000 + index) % 10,
     height: 10,
@@ -24,6 +23,12 @@ const MoveItem = ({ x, index }: MoveItemProps) => {
   }));
 
   const elementRef = useSignalRef<HTMLDivElement | null>(null);
+
+  useSignalEffect(() => {
+    if (elementRef.value) {
+      elementRef.value.style.transform = `translateX(${x.value - 50}px)`;
+    }
+  });
 
   return useComputed(() => {
     return <div style={computedStyle.value} ref={elementRef} />;
@@ -84,7 +89,7 @@ const Track = ({ x }: TrackProps) => {
         onMouseUp={onMouseUpOrBlue.value}
         onBlur={onMouseUpOrBlue.value}
       >
-        preact signals 拖动这个 div 改变上面 div 的位置 {x}
+        preact signals dom 拖动这个 div 改变上面 div 的位置 {x}
       </div>
     );
   });

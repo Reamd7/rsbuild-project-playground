@@ -1,82 +1,107 @@
-//react
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type React from 'react';
+import { useCallback, useMemo,useState } from 'react';
+import { count } from './count';
 
-
-const useMemoFn = <T extends (...args: any[]) => any>(fn: T) => {
-  const ref = useRef(fn);
-  ref.current = fn;
-
-  return useCallback((...args: Parameters<T>) => {
-    return ref.current(...args);
-  }, []);
+interface MoveItemProps {
+  x: number;
+  index: number;
 }
 
-const App = () => {
-  // 当前位置
-  const [x, setX] = useState(0);
+const MoveItem = ({ x, index }: MoveItemProps) => {
+  // 去掉注释的情况下，性能会大幅提升，因为不再需要用 react 重新渲染了
+  const computedStyle = useMemo<React.CSSProperties>(() => ({
+    position: 'absolute',
+    top: 200 + 10 * index,
+    // transform: `translateX(${x.peek() - 50}px)`,
+    transform: `translateX(${x - 50}px)`,
+    zIndex: 9999,
+    width: (1000 + index) % 10,
+    height: 10,
+    backgroundColor: 'red',
+  }), [x, index]);
+
+  return <div style={computedStyle} />;
+};
+
+function useX() {
+  const x = useState<number>(0);
+  return x;
+}
+
+interface TrackProps {
+  xState: ReturnType<typeof useX>;
+}
+
+const Track = ({ xState }: TrackProps) => {
   // div 起始位置
+  const [x , setX] = xState;
   const [startX, setStartX] = useState(0);
-  // move 起始位置
-  const [moveStartX, setMoveStartX] = useState(0);
-
-  // 每次触发 mouseMove 都会触发 render
-  console.log('render');
-
-  const dragStart = useMemoFn((ev) => {
+  const [mouseStartX, setMouseStartX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const onMouseDown = useCallback((ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    setMouseStartX(ev.clientX);
+    setDragging(true);
+    setX(ev.clientX);
     setStartX(x);
-    setMoveStartX(ev.clientX);
+  }, [x, setX]);
 
-    // 这个 dragging 是 setState 之前的 dragging
-    window.addEventListener('mousemove', dragging);
-    window.addEventListener('mouseup', dragEnd);
-    window.addEventListener('blur', dragEnd);
-  })
+  const onMouseMove = useCallback(
+    (ev: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      if (!dragging) return;
+      // 移动距离
+      // console.log([x.peek(), startX.peek(), mouseStartX.peek()]);
+      // 设置最终位置
+      const distance = ev.clientX - mouseStartX;
+      // 所以拿不到更新后的 startX 和 moveStartX
+      setX(startX + distance);
+    },
+    [startX, mouseStartX, setX, dragging],
+  );
+  const onMouseUpOrBlue = useCallback(() => {
+    setDragging(false);
+  }, []);
 
-  // 实际上这个会变
-  const dragging = useMemoFn((ev) => {
-    // 所以拿不到更新后的 startX 和 moveStartX
-    console.log([startX, moveStartX]);
-    // 移动距离
-    const distance = ev.clientX - moveStartX;
-    // 设置最终位置
-    setX(startX + distance);
-  });
-
-  const dragEnd = useMemoFn(() => {
-    window.removeEventListener('mousemove', dragging);
-    window.removeEventListener('mouseup', dragEnd);
-    window.removeEventListener('blur', dragEnd);
-  });
-
-  return (
-    <>
+  const track = useMemo(() => {
+    return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
       <div
         style={{
           position: 'absolute',
           top: 100,
-          left: x - 50,
-          zIndex: 9999,
-          width: 100,
-          height: 100,
-          backgroundColor: 'red',
-        }}
-      ></div>
-
-      <div
-        style={{
-          position: 'absolute',
-          top: 200,
           left: 0,
           right: 0,
           zIndex: 9999,
           height: 100,
           backgroundColor: 'green',
         }}
-        onMouseDown={ev => dragStart(ev.nativeEvent)}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUpOrBlue}
+        onBlur={onMouseUpOrBlue}
       >
-        拖动这个 div 改变上面 div 的位置
+        source 拖动这个 div 改变上面 div 的位置 {x}
       </div>
+    );
+  }, [onMouseDown, onMouseMove, onMouseUpOrBlue, x]);
+
+  return track;
+};
+
+const list = Array.from({ length: count })
+    .fill(0)
+    .map((_, index) => index);
+
+const App = () => {
+  // 当前位置
+  const x = useX();
+
+  return (
+    <>
+      <Track xState={x} />
+      {list.map((item) => (
+        <MoveItem key={item} x={x[0]} index={item} />
+      ))}
     </>
   );
-};
+}
 export default App;
